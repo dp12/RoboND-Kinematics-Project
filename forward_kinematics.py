@@ -12,8 +12,8 @@ a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
 alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
 
 # DH Parameters
-s = {alpha0:     0, a0:         0, d1:  0.33, 
-     alpha1: -pi/2, a1:      0.35, d2:  0.42, q2: q2-pi/2,
+s = {alpha0:     0, a0:         0, d1:  0.75, 
+     alpha1: -pi/2, a1:      0.35, d2:     0, q2: q2-pi/2,
      alpha2:     0, a2:      1.25, d3:     0,
      alpha3: -pi/2, a3:    -0.054, d4:   1.5,
      alpha4:  pi/2, a4:         0, d5:     0,
@@ -97,3 +97,4 @@ print("T0_G = ",T0_G.evalf(subs={q1: 0, q2:0, q3: 0, q4: 0, q5: 0, q6: 0}))
 
 # Total Homogeneous Transform Between base link and gripper link with orientation correction
 T_total = simplify(T0_G * R_corr)
+print("T_tot = ",T_total.evalf(subs={q1: 0, q2:0, q3: 0, q4: 0, q5: 0, q6: 0}))

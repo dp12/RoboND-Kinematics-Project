@@ -105,21 +105,25 @@ def handle_calculate_IK(req):
             ROT_z = Matrix([[cos(y),  -sin(y), 0],
                             [sin(y),   cos(y), 0],
             	            [     0,        0, 1]]) 
-            
-            Rotation_ERR = ROT_z.subs(y, radians(180)) * ROT_y.subs(p,
-            radians(-90))
-            ROT_EE = ROT_EE = ROT_z * ROT_y * ROT_x
+            # Correct for rotational differences between DH parameters and URDF definitions
+            Rotation_ERR = ROT_z.subs(y, radians(180)) * ROT_y.subs(p, radians(-90))
+	    # Get the desired orientation for the end effector
+            ROT_EE = ROT_z * ROT_y * ROT_x
             ROT_EE = ROT_EE * Rotation_ERR
             ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
             
             EE = Matrix([[px], [py], [pz]])
-            
+            # Get the vector for the wrist center wrt the base frame
+	    # Take the end effector vector and subtract the distance from end effect to wrist
+	    # center, rotated into place with the rotation matrix from frame 0 to frame 6
+	    # r_wc = r_ee - d_ee * R
             WC = EE - (0.303) * ROT_EE[:,2]
             #
             #
             # Calculate joint angles using Geometric IK method
 
             # Get joint angles with atan2
+	    # theta1 controls movement in the yaw direction, so compute theta1 = tan^-1(y, x)
             theta1 = atan2(WC[1], WC[0])
             
             # Get theta2, theta3 with SSS triangle

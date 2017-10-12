@@ -40,7 +40,7 @@ def handle_calculate_IK(req):
 	     alpha2:     0, a2:      1.25, d3:     0,
 	     alpha3: -pi/2, a3:    -0.054, d4:   1.5,
 	     alpha4:  pi/2, a4:         0, d5:     0,
-	     alpha5: -pi/2, a5:         0, d6:     0,
+	     alpha5: -pi/2, a5:         0, d6:     0,}
 
 	#
 	#            
@@ -123,26 +123,64 @@ def handle_calculate_IK(req):
             # Calculate joint angles using Geometric IK method
 
             # Get joint angles with atan2
-	    # theta1 controls movement in the yaw direction, so compute theta1 = tan^-1(y, x)
+            # theta1 controls movement in the yaw direction, so compute 
+            # theta1 = tan^-1(y, x)
             theta1 = atan2(WC[1], WC[0])
             
             # Get theta2, theta3 with SSS triangle
+            # side_a comes from a triangle, with the hypotenuse as the straight
+            # line distance from joint 3 to joint 5
             side_a = 1.501
+            # side_b is hardest to compute - it is obtained from
+            # its components.
+            # wc[2] is the wrist center z-component from the base frame, so
+            # subtract 0.75 to get the z-distance starting from joint 2
+            # wc[0] and w[1] are the x and y components of the
+            # wrist center (as seen from top-down view). By using
+            # the pythagorean theorem, we can calculate the
+            # hypotenuse. However, joint 2 juts out from joint 1,
+            # so subtract this constant offset (0.35).
+            # Then, with the x and y components of side B, we
+            # compute it with the pythagorean theorem.
             side_b = sqrt(pow((sqrt(WC[0] * WC[0] + WC[1] * WC[1]) - 0.35), 2) + pow((WC[2] - 0.75), 2))
+            # side_c is the link length between joint 2 and joint 3
             side_c = 1.25
             
+            # By the Law of Cosines:
+            # cos(A) = (b^2 + c^2 - a^2) / 2*b*c
+            # cos(B) = (c^2 + a^2 - b^2) / 2*c*a
+            # cos(C) = (a^2 + b^2 - c^2) / 2*a*b
             angle_a = acos((side_b * side_b + side_c * side_c - side_a * side_a) / (2 * side_b * side_c))
             angle_b = acos((side_a * side_a + side_c * side_c - side_b * side_b) / (2 * side_a * side_c))
             angle_c = acos((side_a * side_a + side_b * side_b - side_c * side_c) / (2 * side_a * side_b))
             
+            # We know theta2, angle_a, the angle for side B add
+            # up to 90 degrees. Therefore, compute the side B
+            # angle with atan2 and then solve for theta2.
             theta2 = pi / 2 - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0] *
             WC[0] + WC[1] * WC[1]) - 0.35)
+            # Above the sag angle caused by the dip between joint 3 and 4, you
+            # can obtain an upper right triangle with the horizontal. The angle
+            # between this horizontal and the link between joints 2 and 3 is 90
+            # degrees when theta2 is zero. Therefore, you can obtain theta3 by
+            # taking 90 degrees and subtracting that angle and angle_b.
             theta3 = pi / 2 - (angle_b + 0.036) 
             
+            # Extract the rotation matrix from the individual transforms and
+            # multiply them up to get the rotation matrix from frame 3 to the
+            # base frame
             R0_3 = T0_1[0:3, 0:3] * T1_2[0:3, 0:3] * T2_3[0:3, 0:3]
             R0_3 = R0_3.evalf(subs={q1: theta1, q2: theta2, q3: theta3})
-            R3_6 = R0_3.inv("LU") * ROT_EE
+            # ROT_EE is the rotation matrix from base frame to gripper obtained
+            # from desired roll, pitch, yaw specified in request.
+            #
+            # For this calculation, just use the tranpose, as the inverse is
+            # equal to the transpose for rotation matrices.
+            #R3_6 = R0_3.inv("LU") * ROT_EE
+            R3_6 = R0_3.T * ROT_EE
             
+            # Print the symbolic matrix and solve the linear equations to
+            # obtain solutions for thetas 4-6
             theta4 = atan2(R3_6[2,2], -R3_6[0,2])
             theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2] *
             R3_6[2,2]), R3_6[1,2])

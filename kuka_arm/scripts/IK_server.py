@@ -180,14 +180,19 @@ def handle_calculate_IK(req):
             R3_6 = R0_3.T * ROT_EE
             
             # Print the symbolic matrix and solve the linear equations to
-            # obtain solutions for thetas 4-6
-            theta4 = atan2(R3_6[2,2], -R3_6[0,2])
-            theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2] *
-            R3_6[2,2]), R3_6[1,2])
-            theta6 = atan2(-R3_6[1,1], R3_6[1,0])
-            #
-            #
-            ###
+            # obtain solutions for thetas 4-6. There are two possible values
+            # (positive and negative) for sin(theta5), so when solving for 
+	    # theta4 and theta6, we can make different choices about which term
+	    # gets a negative value. By printing the angles and empirical analysis,
+	    # we find that the following configuration gives the smallest angle 
+            # differences from the previous angle.
+            theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2] * R3_6[2,2]), R3_6[1,2])
+	    if sin(theta5) < 0:
+	    	theta4 = atan2(-R3_6[2,2], R3_6[0,2])
+            	theta6 = atan2(R3_6[1,1], -R3_6[1,0])
+	    else:
+		theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+            	theta6 = atan2(-R3_6[1,1], R3_6[1,0])
         		
             # Populate response for the IK request
             # In the next line replace theta1,theta2...,theta6 by your joint angle variables
